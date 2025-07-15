@@ -1,0 +1,6 @@
+services:
+  dev:
+    build: .
+    volumes:
+      - ./src:/app/src
+    command: tail -f /dev/null
