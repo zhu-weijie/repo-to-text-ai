@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "repo-to-text"
+version = "0.0.1"
+authors = [
+  { name="zhu-weijie", email="byzhubaiyuan@gmail.com" },
+]
+description = "A tool to turn an entire Git repository into a single organized text file for AI context."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file="LICENSE" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 3 - Alpha",
+    "Topic :: Software Development",
+    "Topic :: Utilities",
+]
+keywords = ["git", "repository", "context", "ai", "llm"]
