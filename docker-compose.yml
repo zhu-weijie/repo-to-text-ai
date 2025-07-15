@@ -2,5 +2,5 @@ services:
   dev:
     build: .
     volumes:
-      - ./src:/app/src
+      - .:/app
     command: tail -f /dev/null
