@@ -24,3 +24,6 @@ keywords = ["git", "repository", "context", "ai", "llm"]
 dependencies = [
     "typer[all]",
 ]
+
+[project.scripts]
+repo-to-text = "repo_to_text.cli:app"
