@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pathspec
-
 
 def is_binary(file_path: Path) -> bool:
     try:
@@ -12,26 +10,23 @@ def is_binary(file_path: Path) -> bool:
         return True
 
 
-def generate_tree(directory: Path, spec: pathspec.PathSpec = None) -> str:
-    tree_lines = []
+def generate_tree_from_files(file_paths: list[Path], repo_root: Path) -> str:
+    tree = {}
+    for path in file_paths:
+        parts = path.relative_to(repo_root).parts
+        node = tree
+        for part in parts:
+            node = node.setdefault(part, {})
 
-    all_paths = sorted(list(directory.rglob("*")))
+    def build_tree_lines(node, prefix=""):
+        lines = []
+        items = sorted(node.items())
+        for i, (name, sub_node) in enumerate(items):
+            connector = "└── " if i == len(items) - 1 else "├── "
+            lines.append(f"{prefix}{connector}{name}")
+            if sub_node:
+                extension = "    " if i == len(items) - 1 else "│   "
+                lines.extend(build_tree_lines(sub_node, prefix + extension))
+        return lines
 
-    for path in all_paths:
-        relative_path = path.relative_to(directory)
-
-        if spec and spec.match_file(str(relative_path)):
-            continue
-        if ".git" in relative_path.parts:
-            continue
-        if relative_path.name in [".gitignore", ".context_ignore"]:
-            continue
-
-        depth = len(relative_path.parts) - 1
-        indent = "    " * depth
-
-        prefix = "└── " if path.is_dir() else "├── "
-
-        tree_lines.append(f"{indent}{prefix}{path.name}")
-
-    return "\n".join(tree_lines)
+    return "\n".join(build_tree_lines(tree))

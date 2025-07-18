@@ -1,6 +1,6 @@
 from pathlib import Path
 import pathspec
-from .utils import is_binary, generate_tree
+from .utils import is_binary, generate_tree_from_files
 
 
 def process_repository(repo_path: Path, output_file: Path):
@@ -21,46 +21,51 @@ def process_repository(repo_path: Path, output_file: Path):
         else None
     )
 
-    project_tree = generate_tree(repo_path, spec)
+    included_files = []
+    all_paths = sorted(list(repo_path.rglob("*")))
+
+    for path in all_paths:
+        if not path.is_file():
+            continue
+
+        relative_path = path.relative_to(repo_path)
+
+        if spec and spec.match_file(str(relative_path)):
+            continue
+        if ".git" in relative_path.parts:
+            continue
+        if relative_path.name in [".gitignore", ".context_ignore"]:
+            continue
+        if is_binary(path):
+            continue
+
+        included_files.append(path)
+
+    tree_string = generate_tree_from_files(included_files, repo_path)
 
     header = (
         "Project Tree:\n"
         "=============\n"
-        f"{project_tree}\n\n"
+        f"{tree_string}\n\n"
         "File Contents:\n"
         "==============\n\n"
     )
 
     all_content = [header]
 
-    sorted_paths = sorted(list(repo_path.rglob("*")))
-
-    for item in sorted_paths:
-        relative_item_path = item.relative_to(repo_path)
-        if spec and spec.match_file(str(relative_item_path)):
-            continue
-
-        if ".git" in item.parts:
-            continue
-
-        if item.name in [".gitignore", ".context_ignore"]:
-            continue
-
-        if item.is_file():
-            if is_binary(item):
-                continue
-
-            try:
-                file_content = item.read_text(encoding="utf-8")
-                file_block = (
-                    f"--- START OF {relative_item_path} ---\n"
-                    f"{file_content}\n"
-                    f"--- END OF {relative_item_path} ---\n\n"
-                )
-                all_content.append(file_block)
-            except Exception as e:
-                all_content.append(
-                    f"--- ERROR READING FILE: {relative_item_path}: {e} ---\n\n"
-                )
+    for item in included_files:
+        try:
+            relative_item_path = item.relative_to(repo_path)
+            file_content = item.read_text(encoding="utf-8")
+            file_block = (
+                f"--- START OF {relative_item_path} ---\n"
+                f"{file_content}\n"
+                f"--- END OF {relative_item_path} ---\n\n"
+            )
+            all_content.append(file_block)
+        except Exception as e:
+            all_content.append(
+                f"--- ERROR READING FILE: {item.relative_to(repo_path)}: {e} ---\n\n"
+            )
 
     output_file.write_text("".join(all_content), encoding="utf-8")
