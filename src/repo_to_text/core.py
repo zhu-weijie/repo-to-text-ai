@@ -1,18 +1,41 @@
 from pathlib import Path
 import pathspec
-from .utils import is_binary
+from .utils import is_binary, generate_tree
 
 
 def process_repository(repo_path: Path, output_file: Path):
+    ignore_patterns = []
     gitignore_path = repo_path / ".gitignore"
-    spec = None
     if gitignore_path.is_file():
         with open(gitignore_path, "r") as f:
-            spec = pathspec.PathSpec.from_lines("gitwildmatch", f)
+            ignore_patterns.extend(f.readlines())
 
-    all_content = []
+    context_ignore_path = repo_path / ".context_ignore"
+    if context_ignore_path.is_file():
+        with open(context_ignore_path, "r") as f:
+            ignore_patterns.extend(f.readlines())
 
-    for item in repo_path.rglob("*"):
+    spec = (
+        pathspec.PathSpec.from_lines("gitwildmatch", ignore_patterns)
+        if ignore_patterns
+        else None
+    )
+
+    project_tree = generate_tree(repo_path, spec)
+
+    header = (
+        "Project Tree:\n"
+        "=============\n"
+        f"{project_tree}\n\n"
+        "File Contents:\n"
+        "==============\n\n"
+    )
+
+    all_content = [header]
+
+    sorted_paths = sorted(list(repo_path.rglob("*")))
+
+    for item in sorted_paths:
         relative_item_path = item.relative_to(repo_path)
         if spec and spec.match_file(str(relative_item_path)):
             continue
@@ -20,14 +43,11 @@ def process_repository(repo_path: Path, output_file: Path):
         if ".git" in item.parts:
             continue
 
-        if item.name == ".gitignore":
+        if item.name in [".gitignore", ".context_ignore"]:
             continue
 
         if item.is_file():
             if is_binary(item):
-                all_content.append(
-                    f"--- SKIPPED BINARY FILE: {relative_item_path} ---\n\n"
-                )
                 continue
 
             try:
