@@ -29,9 +29,6 @@ def main(
         ),
     ] = Path("context_output.txt"),
 ):
-    """
-    Consolidates an entire Git repository into a single, organized text file.
-    """
     try:
         typer.echo(f"Processing repository at: {repo_path}")
         process_repository(repo_path, output_file)
