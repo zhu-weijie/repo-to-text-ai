@@ -21,3 +21,6 @@ classifiers = [
     "Topic :: Utilities",
 ]
 keywords = ["git", "repository", "context", "ai", "llm"]
+dependencies = [
+    "typer[all]",
+]
