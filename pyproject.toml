@@ -24,6 +24,7 @@ keywords = ["git", "repository", "context", "ai", "llm"]
 dependencies = [
     "typer[all]",
     "pathspec",
+    "tqdm",
 ]
 
 [project.scripts]
