@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "repo-to-text"
-version = "0.0.1"
+name = "repo-to-text-ai"
+version = "0.1.0"
 authors = [
   { name="zhu-weijie", email="byzhubaiyuan@gmail.com" },
 ]
@@ -16,7 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Topic :: Software Development",
     "Topic :: Utilities",
 ]
@@ -27,8 +27,12 @@ dependencies = [
     "tqdm",
 ]
 
+[project.urls]
+Homepage = "https://github.com/zhu-weijie/repo-to-text-ai"
+"Bug Tracker" = "https://github.com/zhu-weijie/repo-to-text-ai/issues"
+
 [project.scripts]
-repo-to-text = "repo_to_text.cli:app"
+repo-to-text-ai = "repo_to_text_ai.cli:app"
 
 [project.optional-dependencies]
 test = [
