@@ -63,10 +63,10 @@ You can create a `.context_ignore` file in the root of your repository. It uses 
 tests/
 
 # Exclude specific large data files
-data/large_dataset.csv```
+data/large_dataset.csv
+```
 
 ---
-```
 
 ## Development
 
