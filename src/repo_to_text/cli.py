@@ -1,12 +1,25 @@
 import typer
+import logging
 from pathlib import Path
 from repo_to_text.core import process_repository
 from typing_extensions import Annotated
 
 app = typer.Typer()
 
+logger = logging.getLogger("repo_to_text")
 
-@app.command(name="repo-to-text")
+
+def setup_logging(verbose: bool):
+    log = logging.getLogger("repo_to_text")
+
+    log.setLevel(logging.DEBUG if verbose else logging.INFO)
+
+    if not log.handlers:
+        handler = logging.StreamHandler()
+        log.addHandler(handler)
+
+
+@app.command()
 def main(
     repo_path: Annotated[
         Path,
@@ -28,15 +41,29 @@ def main(
             resolve_path=True,
         ),
     ] = Path("context_output.txt"),
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", "-v", help="Enable verbose logging for debugging."),
+    ] = False,
 ):
-    try:
-        typer.echo(f"Processing repository at: {repo_path}")
-        process_repository(repo_path, output_file)
+    setup_logging(verbose)
+
+    if not (repo_path / ".git").is_dir():
         typer.secho(
-            f"Success! Context file created at: {output_file}", fg=typer.colors.GREEN
+            f"Error: The specified path '{repo_path}' is not a valid Git repository.",
+            fg=typer.colors.RED,
+            err=True,
         )
+        raise typer.Exit(code=1)
+
+    try:
+        process_repository(repo_path, output_file)
+
+        print(f"\nSuccess! Context file created at: {output_file}")
+
     except Exception as e:
-        typer.secho(f"An error occurred: {e}", fg=typer.colors.RED, err=True)
+        typer.secho(f"An unexpected error occurred: {e}", fg=typer.colors.RED, err=True)
+        logger.debug("Traceback:", exc_info=True)
         raise typer.Exit(code=1)
 
 
