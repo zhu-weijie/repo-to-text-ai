@@ -29,3 +29,8 @@ dependencies = [
 
 [project.scripts]
 repo-to-text = "repo_to_text.cli:app"
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
