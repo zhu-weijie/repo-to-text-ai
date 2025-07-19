@@ -13,31 +13,35 @@ def temp_repo(tmp_path: Path) -> Path:
     repo_root = tmp_path / "test_repo"
     repo_root.mkdir()
     (repo_root / ".git").mkdir()
-    (repo_root / "src").mkdir()
-    (repo_root / "src" / "main.py").write_text("print('hello world')")
-    (repo_root / "docs").mkdir()
-    (repo_root / "docs" / "guide.md").write_text("# Guide")
-    (repo_root / "README.md").write_text("# Test Repo")
-    (repo_root / "logo.png").write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00")
-    (repo_root / "node_modules").mkdir()
-    (repo_root / "node_modules" / "some_lib.js").write_text("var x = 1;")
-    (repo_root / "dist").mkdir()
-    (repo_root / "dist" / "output.js").write_text("var x = 1;")
-    (repo_root / "secret.key").write_text("TOP_SECRET")
+
     (repo_root / ".gitignore").write_text(
         """
-        # Node modules
+        # General ignores
+        *.log
+        /secret.key
+        """
+    )
+    (repo_root / "app.py").write_text("print('main app')")
+    (repo_root / "config.log").write_text("some log data")
+    (repo_root / "secret.key").write_text("ROOT_SECRET")
+
+    frontend_dir = repo_root / "frontend"
+    frontend_dir.mkdir()
+    (frontend_dir / ".gitignore").write_text(
+        """
+        # Frontend specific ignores
         node_modules/
-        # Build output
         dist/
         """
     )
-    (repo_root / ".context_ignore").write_text(
-        """
-        # Ignore secrets
-        *.key
-        """
-    )
+    (frontend_dir / "app.js").write_text("console.log('frontend app');")
+    (frontend_dir / "secret.key").write_text("FRONTEND_SECRET")
+
+    (frontend_dir / "dist").mkdir()
+    (frontend_dir / "dist" / "bundle.js").write_text("var app;")
+    (frontend_dir / "node_modules").mkdir()
+    (frontend_dir / "node_modules" / "react.js").write_text("var react;")
+    (repo_root / ".context_ignore").write_text("*.md")
     return repo_root
 
 
@@ -50,12 +54,26 @@ def test_cli_integration(temp_repo: Path):
     assert output_file.exists()
     content = output_file.read_text()
     assert len(content) > 0
-    expected_tree = "Project Tree:\n=============\n├── README.md\n├── docs\n│   └── guide.md\n└── src\n    └── main.py\n\nFile Contents:\n============="
+
+    expected_tree = """Project Tree:
+=============
+├── app.py
+└── frontend
+    ├── app.js
+    └── secret.key
+
+File Contents:
+============="""
     assert expected_tree in content
-    assert "--- START OF README.md ---" in content
-    assert "dist/" not in content
-    assert "node_modules" not in content
-    assert "secret.key" not in content
+
+    assert "print('main app')" in content
+    assert "console.log('frontend app');" in content
+    assert "FRONTEND_SECRET" in content
+
+    assert "config.log" not in content
+    assert "ROOT_SECRET" not in content
+    assert "bundle.js" not in content
+    assert "react.js" not in content
 
 
 def test_error_on_non_git_repo(tmp_path: Path):
@@ -70,15 +88,13 @@ def test_core_logic_logging(temp_repo: Path, caplog):
     with caplog.at_level(logging.DEBUG):
         process_repository(temp_repo, output_file, disable_progress=True)
 
-    messages = [record.message for record in caplog.records]
+    log_text = caplog.text
 
-    def assert_in_logs(substring):
-        assert any(
-            substring in msg for msg in messages
-        ), f"'{substring}' not found in logs"
+    assert "Loaded 2 effective patterns from .gitignore" in log_text
+    assert "Loaded 2 effective patterns from frontend/.gitignore" in log_text
+    assert "Loaded 1 effective patterns from .context_ignore" in log_text
 
-    assert_in_logs("Starting repository processing")
-    assert_in_logs("Loaded 2 effective patterns from .gitignore")
-    assert_in_logs("Loaded 1 effective patterns from .context_ignore")
-    assert_in_logs("IGNORE (pathspec): dist/output.js")
-    assert_in_logs("INCLUDE: README.md")
+    assert "IGNORE (matched in .gitignore): config.log" in log_text
+    assert "IGNORE (matched in .gitignore): secret.key" in log_text
+    assert "IGNORE (matched in .gitignore): frontend/dist/bundle.js" in log_text
+    assert "INCLUDE: app.py" in log_text
