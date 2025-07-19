@@ -10,12 +10,13 @@ logger = logging.getLogger("repo_to_text")
 
 
 def setup_logging(verbose: bool):
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format="%(message)s",
-        handlers=[logging.StreamHandler()],
-    )
+    log = logging.getLogger("repo_to_text")
+
+    log.setLevel(logging.DEBUG if verbose else logging.INFO)
+
+    if not log.handlers:
+        handler = logging.StreamHandler()
+        log.addHandler(handler)
 
 
 @app.command()
@@ -56,11 +57,10 @@ def main(
         raise typer.Exit(code=1)
 
     try:
-        logger.info(f"Processing repository at: {repo_path}")
         process_repository(repo_path, output_file)
-        typer.secho(
-            f"\nSuccess! Context file created at: {output_file}", fg=typer.colors.GREEN
-        )
+
+        print(f"\nSuccess! Context file created at: {output_file}")
+
     except Exception as e:
         typer.secho(f"An unexpected error occurred: {e}", fg=typer.colors.RED, err=True)
         logger.debug("Traceback:", exc_info=True)
