@@ -4,6 +4,7 @@ from typer.testing import CliRunner
 from repo_to_text_ai.cli import app, setup_logging
 from repo_to_text_ai.core import process_repository
 import logging
+from repo_to_text_ai import __version__
 
 runner = CliRunner()
 
@@ -98,3 +99,9 @@ def test_core_logic_logging(temp_repo: Path, caplog):
     assert "IGNORE (matched in .gitignore): secret.key" in log_text
     assert "IGNORE (matched in .gitignore): frontend/dist/bundle.js" in log_text
     assert "INCLUDE: app.py" in log_text
+
+
+def test_version_flag():
+    result = runner.invoke(app, ["--version"])
+    assert result.exit_code == 0
+    assert f"repo-to-text-ai version: {__version__}" in result.stdout

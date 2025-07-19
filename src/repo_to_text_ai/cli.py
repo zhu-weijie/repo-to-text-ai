@@ -3,10 +3,18 @@ import logging
 from pathlib import Path
 from repo_to_text_ai.core import process_repository
 from typing_extensions import Annotated
+from repo_to_text_ai import __version__
 
 app = typer.Typer()
 
 logger = logging.getLogger("repo_to_text")
+
+
+def version_callback(value: bool):
+    """Prints the version of the application and exits."""
+    if value:
+        typer.echo(f"repo-to-text-ai version: {__version__}")
+        raise typer.Exit()
 
 
 def setup_logging(verbose: bool):
@@ -44,6 +52,15 @@ def main(
     verbose: Annotated[
         bool,
         typer.Option("--verbose", "-v", help="Enable verbose logging for debugging."),
+    ] = False,
+    version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            help="Show the application's version and exit.",
+            callback=version_callback,
+            is_eager=True,
+        ),
     ] = False,
 ):
     setup_logging(verbose)
