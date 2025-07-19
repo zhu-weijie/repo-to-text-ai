@@ -1,5 +1,6 @@
 from pathlib import Path
 import pathspec
+from tqdm import tqdm
 from .utils import is_binary, generate_tree_from_files
 
 
@@ -22,14 +23,11 @@ def process_repository(repo_path: Path, output_file: Path):
     )
 
     included_files = []
-    all_paths = sorted(list(repo_path.rglob("*")))
-
+    all_paths = list(repo_path.rglob("*"))
     for path in all_paths:
         if not path.is_file():
             continue
-
         relative_path = path.relative_to(repo_path)
-
         if spec and spec.match_file(str(relative_path)):
             continue
         if ".git" in relative_path.parts:
@@ -38,11 +36,11 @@ def process_repository(repo_path: Path, output_file: Path):
             continue
         if is_binary(path):
             continue
-
         included_files.append(path)
 
-    tree_string = generate_tree_from_files(included_files, repo_path)
+    included_files = sorted(included_files)
 
+    tree_string = generate_tree_from_files(included_files, repo_path)
     header = (
         "Project Tree:\n"
         "=============\n"
@@ -50,10 +48,9 @@ def process_repository(repo_path: Path, output_file: Path):
         "File Contents:\n"
         "==============\n\n"
     )
-
     all_content = [header]
 
-    for item in included_files:
+    for item in tqdm(included_files, desc="Processing files", unit="file"):
         try:
             relative_item_path = item.relative_to(repo_path)
             file_content = item.read_text(encoding="utf-8")
