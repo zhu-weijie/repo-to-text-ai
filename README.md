@@ -1,8 +1,8 @@
-# Repo-to-Text
+# Repo-to-Text-AI
 
 **Turn an entire Git repository into a single, organized text file designed for providing context to Large Language Models (LLMs).**
 
-`repo-to-text` is a command-line tool that intelligently traverses a local repository, respecting `.gitignore` rules, and consolidates the code into a clean text file. This is perfect for pasting complete project contexts into AI prompts for analysis, documentation, or feature development.
+`repo-to-text-ai` is a command-line tool that intelligently traverses a local repository, respecting `.gitignore` rules, and consolidates the code into a clean text file. This is perfect for pasting complete project contexts into AI prompts for analysis, documentation, or feature development.
 
 ---
 
@@ -20,10 +20,10 @@
 
 ## Installation
 
-You can install `repo-to-text` directly from PyPI:
+You can install `repo-to-text-ai` directly from PyPI:
 
 ```bash
-pip install repo-to-text
+pip install repo-to-text-ai
 ```
 
 ## Usage
@@ -31,7 +31,7 @@ pip install repo-to-text
 Navigate to the root directory of the Git repository you want to process and run the command:
 
 ```bash
-repo-to-text .
+repo-to-text-ai .
 ```
 
 This will create a `context_output.txt` file in the current directory.
@@ -41,13 +41,13 @@ This will create a `context_output.txt` file in the current directory.
 -   **Specify Output File:** Use the `--output` or `-o` flag to specify a different name or location for the output file.
 
     ```bash
-    repo-to-text . -o my_project_context.txt
+    repo-to-text-ai . -o my_project_context.txt
     ```
 
 -   **Specify Repository Path:** You can run the command from anywhere by providing the path to the repository.
 
     ```bash
-    repo-to-text /path/to/your/project
+    repo-to-text-ai /path/to/your/project
     ```
 
 ### Excluding Additional Files (`.context_ignore`)
@@ -80,8 +80,8 @@ Interested in contributing? We use `pytest` for testing and `ruff`/`black` for f
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/zhu-weijie/repo-to-text.git
-    cd repo-to-text
+    git clone https://github.com/zhu-weijie/repo-to-text-ai.git
+    cd repo-to-text-ai
     ```
 
 2.  **Create and activate a virtual environment:**
