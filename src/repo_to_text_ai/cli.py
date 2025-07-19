@@ -1,7 +1,7 @@
 import typer
 import logging
 from pathlib import Path
-from repo_to_text.core import process_repository
+from repo_to_text_ai.core import process_repository
 from typing_extensions import Annotated
 
 app = typer.Typer()

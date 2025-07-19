@@ -1,8 +1,8 @@
 import pytest
 from pathlib import Path
 from typer.testing import CliRunner
-from repo_to_text.cli import app, setup_logging
-from repo_to_text.core import process_repository
+from repo_to_text_ai.cli import app, setup_logging
+from repo_to_text_ai.core import process_repository
 import logging
 
 runner = CliRunner()
