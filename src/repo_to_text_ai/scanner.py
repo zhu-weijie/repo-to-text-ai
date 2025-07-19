@@ -9,10 +9,12 @@ logger = logging.getLogger(__name__)
 def find_all_files(repo_path: Path) -> list[Path]:
     logger.debug(f"Scanning for files in: {repo_path}")
 
-    ignore_file_paths = list(repo_path.rglob(".gitignore"))
+    ignore_files = list(repo_path.rglob(".gitignore")) + list(
+        repo_path.rglob(".context_ignore")
+    )
+
     spec_map = {}
-    for ignore_file in ignore_file_paths:
-        directory = ignore_file.parent
+    for ignore_file in ignore_files:
         with open(ignore_file, "r") as f:
             patterns = [
                 line.strip()
@@ -20,8 +22,11 @@ def find_all_files(repo_path: Path) -> list[Path]:
                 if line.strip() and not line.strip().startswith("#")
             ]
         if patterns:
+            logger.debug(
+                f"Loaded {len(patterns)} effective patterns from {ignore_file.relative_to(repo_path)}"
+            )
             spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
-            spec_map[directory] = spec
+            spec_map[ignore_file] = spec
 
     included_files = []
     all_paths = list(repo_path.rglob("*"))
@@ -39,18 +44,21 @@ def find_all_files(repo_path: Path) -> list[Path]:
             continue
 
         is_ignored = False
-        for parent in [path.parent] + list(path.parent.parents):
-            if parent in spec_map:
-                path_relative_to_spec = path.relative_to(parent)
-                if spec_map[parent].match_file(str(path_relative_to_spec)):
-                    logger.debug(f"IGNORE (spec in {parent}): {path}")
+        for ignore_file, spec in spec_map.items():
+            ignore_dir = ignore_file.parent
+            try:
+                relative_to_ignore_dir = path.relative_to(ignore_dir)
+                if spec.match_file(str(relative_to_ignore_dir)):
+                    logger.debug(
+                        f"IGNORE (matched in {ignore_file.name}): {path.relative_to(repo_path)}"
+                    )
                     is_ignored = True
                     break
-            if parent == repo_path:
-                break
+            except ValueError:
+                continue
 
         if not is_ignored:
-            logger.debug(f"INCLUDE: {path}")
+            logger.debug(f"INCLUDE: {path.relative_to(repo_path)}")
             included_files.append(path)
 
     return sorted(included_files)
