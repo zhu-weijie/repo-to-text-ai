@@ -1,8 +1,9 @@
 from pathlib import Path
+import pathspec
 import logging
 from tqdm import tqdm
-from .scanner import find_all_files
-from .utils import generate_tree_from_files
+
+from .utils import is_binary, generate_tree_from_files, get_files_from_context
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,64 @@ def process_repository(
 ):
     logger.debug(f"Starting repository processing for: {repo_path}")
 
-    included_files = find_all_files(repo_path)
+    potential_files = get_files_from_context(repo_path)
+    if potential_files is None:
+        logger.debug("No .context file found, scanning all repository files.")
+        potential_files = list(repo_path.rglob("*"))
+    else:
+        logger.debug(
+            f"Found .context file, processing {len(potential_files)} specified paths."
+        )
+
+    ignore_patterns = []
+    for gitignore_path in repo_path.rglob(".gitignore"):
+        with open(gitignore_path, "r") as f:
+            lines = f.readlines()
+            ignore_patterns.extend(lines)
+        logger.debug(
+            f"Loaded {len(lines)} patterns from {gitignore_path.relative_to(repo_path)}"
+        )
+
+    for context_ignore_path in repo_path.rglob(".context_ignore"):
+        with open(context_ignore_path, "r") as f:
+            lines = f.readlines()
+            ignore_patterns.extend(lines)
+            logger.debug(
+                f"Loaded {len(lines)} patterns from {context_ignore_path.relative_to(repo_path)}"
+            )
+
+    spec = (
+        pathspec.PathSpec.from_lines("gitwildmatch", ignore_patterns)
+        if ignore_patterns
+        else None
+    )
+
+    included_files = []
+    logger.debug(f"Found {len(potential_files)} total paths to consider.")
+
+    for path in potential_files:
+        if not path.is_file():
+            continue
+
+        relative_path = path.relative_to(repo_path)
+
+        if spec and spec.match_file(str(relative_path)):
+            logger.debug(f"IGNORE (pathspec): {relative_path}")
+            continue
+        if ".git" in relative_path.parts:
+            logger.debug(f"IGNORE (.git dir): {relative_path}")
+            continue
+        if relative_path.name in [".gitignore", ".context_ignore", ".context"]:
+            logger.debug(f"IGNORE (metafile): {relative_path}")
+            continue
+        if is_binary(path):
+            logger.debug(f"IGNORE (binary): {relative_path}")
+            continue
+
+        logger.debug(f"INCLUDE: {relative_path}")
+        included_files.append(path)
+
+    included_files = sorted(included_files)
 
     if not included_files:
         logger.warning("No files to process. Output will be empty.")
