@@ -30,3 +30,31 @@ def generate_tree_from_files(file_paths: list[Path], repo_root: Path) -> str:
         return lines
 
     return "\n".join(build_tree_lines(tree))
+
+
+def get_files_from_context(repo_path: Path) -> set[Path] | None:
+    context_file = repo_path / ".context"
+    if not context_file.is_file():
+        return None
+
+    included_files = set()
+    with open(context_file, "r") as f:
+        for line in f:
+            line_content = line.split("#", 1)[0]
+            line = line_content.strip()
+            if not line:
+                continue
+
+            target_path = repo_path / line
+
+            if not target_path.exists():
+                continue
+
+            if target_path.is_file():
+                included_files.add(target_path.resolve())
+            elif target_path.is_dir():
+                for file_in_dir in target_path.rglob("*"):
+                    if file_in_dir.is_file():
+                        included_files.add(file_in_dir.resolve())
+
+    return included_files

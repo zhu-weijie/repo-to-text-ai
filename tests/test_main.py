@@ -5,6 +5,7 @@ from repo_to_text_ai.cli import app, setup_logging
 from repo_to_text_ai.core import process_repository
 import logging
 from repo_to_text_ai import __version__
+from repo_to_text_ai.utils import get_files_from_context
 
 runner = CliRunner()
 
@@ -105,3 +106,44 @@ def test_version_flag():
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
     assert f"repo-to-text-ai version: {__version__}" in result.stdout
+
+
+def test_get_files_from_context_utility(tmp_path: Path):
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    (project_root / "src").mkdir()
+    (project_root / "src" / "main.py").write_text("main")
+    (project_root / "src" / "utils.py").write_text("utils")
+    (project_root / "docs").mkdir()
+    (project_root / "docs" / "guide.md").write_text("guide")
+    (project_root / "README.md").write_text("readme")
+
+    (project_root / ".context").write_text(
+        """
+        # This is a comment, should be ignored
+
+        README.md        # A specific file
+        src/             # A whole directory
+        
+        # An empty line above should be ignored
+        docs/guide.md    # Another specific file
+        non_existent_file.txt # Should be ignored
+        """
+    )
+
+    result_files = get_files_from_context(project_root)
+
+    expected_files = {
+        (project_root / "README.md").resolve(),
+        (project_root / "src" / "main.py").resolve(),
+        (project_root / "src" / "utils.py").resolve(),
+        (project_root / "docs" / "guide.md").resolve(),
+    }
+
+    assert result_files is not None
+    assert isinstance(result_files, set)
+    assert result_files == expected_files
+
+
+def test_get_files_from_context_returns_none_if_no_file(tmp_path: Path):
+    assert get_files_from_context(tmp_path) is None
